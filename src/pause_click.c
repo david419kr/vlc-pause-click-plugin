@@ -4,6 +4,7 @@
  * Copyright (C) 2014-2025 Maxim Biro
  *
  * Authors: Maxim Biro <nurupo.contributions@gmail.com>
+ * Double-click edit: david419kr https://github.com/david419kr/
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  *
@@ -143,7 +144,7 @@ static atomic_bool timer_scheduled;
 #endif
 
 vlc_module_begin()
-    set_description(N_("Pause/Play video on mouse click"))
+    set_description(N_("Pause/Play video on double click"))
     set_shortname(N_("Pause click"))
 #if LIBVLC_VERSION_MAJOR == 2
     set_capability("video filter2", 0)

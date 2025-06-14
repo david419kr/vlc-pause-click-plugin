@@ -1,3 +1,8 @@
+# "Double Click" Pause Click plugin for VLC
+Simple edit from original single click pause to double click pause.  
+Tested only at Windows 64bit, VLC3.0 environment.  
+[Pre-built DLLs download for Windows](https://github.com/david419kr/vlc-pause-doubleclick-plugin/releases/download/2.2.0-doubleclick/vlc-pause-doubleclick-plugin.zip)
+
 # Pause Click plugin for VLC
 
 [![GitHub total number of all asset downloads from all releases](https://img.shields.io/github/downloads/nurupo/vlc-pause-click-plugin/total?style=flat&logo=github&label=Total%20downloads&labelColor=f48b00&color=f0f3f4)](https://github.com/nurupo/vlc-pause-click-plugin/releases)
