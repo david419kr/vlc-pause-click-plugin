@@ -80,6 +80,9 @@ static const int mouse_button_values[] = {-1, MOUSE_BUTTON_LEFT, MOUSE_BUTTON_CE
 #define MOUSE_BUTTON_CFG CFG_PREFIX "mouse-button"
 #define MOUSE_BUTTON_DEFAULT 1 // MOUSE_BUTTON_LEFT
 
+#define PAUSE_ON_DOUBLE_CLICK_CFG CFG_PREFIX "pause-on-double-click"
+#define PAUSE_ON_DOUBLE_CLICK_DEFAULT false
+
 #define DOUBLE_CLICK_DELAY_CFG CFG_PREFIX "double-click-delay"
 #define DOUBLE_CLICK_DELAY_DEFAULT 300
 
@@ -183,6 +186,10 @@ vlc_module_begin()
               N_("Overlay pause and play icons on the video when it's paused and "
               "played respectively."), false)
     set_section(N_("Double click behavior"), NULL)
+    _add_bool(PAUSE_ON_DOUBLE_CLICK_CFG, PAUSE_ON_DOUBLE_CLICK_DEFAULT,
+              N_("Pause/play on double click"),
+              N_("When enabled, double click will pause/play the video instead of single click. "
+              "This will automatically disable fullscreen toggle on double click."), false)
     _add_bool(ENABLE_DOUBLE_CLICK_DELAY_CFG, ENABLE_DOUBLE_CLICK_DELAY_DEFAULT,
               N_("Enable the custom double click interval"),
               N_("Ignore system's double click interval and use our own instead. "
@@ -487,6 +494,7 @@ static int mouse(filter_t *p_filter, vlc_mouse_t *p_mouse_out, const vlc_mouse_t
     // get mouse button from settings. updates if user changes the setting
     const int mouse_button = cfg_get_mouse_button((vlc_object_t *)p_filter, MOUSE_BUTTON_CFG, MOUSE_BUTTON_DEFAULT);
     msg_Dbg(p_filter, "mouse_button=%d", mouse_button);
+    const bool pause_on_double_click = var_InheritBool(p_filter, PAUSE_ON_DOUBLE_CLICK_CFG);
 
     // manually control double click to fullscreen if directly requested or if the ignore double click option is set
     if ((var_InheritBool(p_filter, ENABLE_DOUBLE_CLICK_DELAY_CFG) || var_InheritBool(p_filter, IGNORE_DOUBLE_CLICK_CFG)) &&
@@ -495,8 +503,21 @@ static int mouse(filter_t *p_filter, vlc_mouse_t *p_mouse_out, const vlc_mouse_t
         p_mouse_out->b_double_click = 0;
     }
 
+    if (pause_on_double_click) {
+        // pause or play on double click
+        if (p_mouse_new->b_double_click && mouse_button == MOUSE_BUTTON_LEFT) {
+            pause_play();
+            // disable fullscreen toggle on double click
+            p_mouse_out->b_double_click = 0;
+        }
+        // ignore single clicks if double click is enabled
+        else if (vlc_mouse_HasPressed(p_mouse_old, p_mouse_new, mouse_button)) {
+            // do nothing
+        }
+    }
+
     // react only on the configured mouse button click
-    if (vlc_mouse_HasPressed(p_mouse_old, p_mouse_new, mouse_button)
+    else if (vlc_mouse_HasPressed(p_mouse_old, p_mouse_new, mouse_button)
 #if LIBVLC_VERSION_MAJOR <= 3
             // treat the double click as the left mouse button click
             || (p_mouse_new->b_double_click && mouse_button == MOUSE_BUTTON_LEFT)
@@ -606,6 +627,16 @@ static int OpenFilter(vlc_object_t *p_this)
                 "Don't forget to restart VLC afterwards");
         return VLC_EGENERIC;
     }
+
+    if (var_InheritBool(p_filter, PAUSE_ON_DOUBLE_CLICK_CFG)) {
+        // disable ignore double click
+        config_PutInt(p_filter, IGNORE_DOUBLE_CLICK_CFG, false);
+        // disable fullscreen toggle on double click
+        config_PutInt(p_filter, DISABLE_FS_TOGGLE_CFG, true);
+        
+        msg_Dbg(p_filter, "Pause on double click enabled - auto-configuring related options");
+    }
+
     video_format_Print(p_this, "pause_click FORMAT IN:", &p_filter->fmt_in.video);
     video_format_Print(p_this, "pause_click FORMAT OUT:", &p_filter->fmt_out.video);
     msg_Dbg(p_filter, "b_allow_fmt_out_change=%d", p_filter->b_allow_fmt_out_change);
